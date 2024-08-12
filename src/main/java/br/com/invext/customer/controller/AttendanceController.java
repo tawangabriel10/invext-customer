@@ -1,9 +1,10 @@
 package br.com.invext.customer.controller;
 
-import br.com.invext.customer.domain.CustomerRequestDTO;
-import br.com.invext.customer.domain.FinishRequestDTO;
-import br.com.invext.customer.domain.ResponseDTO;
-import br.com.invext.customer.service.AttendanceService;
+import br.com.invext.customer.domain.dto.CustomerRequestDTO;
+import br.com.invext.customer.domain.dto.FinishRequestDTO;
+import br.com.invext.customer.domain.dto.ResponseDTO;
+import br.com.invext.customer.service.DirectAttendanceService;
+import br.com.invext.customer.service.FinishAttendanceService;
 import java.net.URI;
 import java.net.URISyntaxException;
 import lombok.RequiredArgsConstructor;
@@ -19,18 +20,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AttendanceController {
 
-    private final AttendanceService service;
+    private final DirectAttendanceService directService;
+    private final FinishAttendanceService finishService;
 
     @PostMapping()
     public ResponseEntity<ResponseDTO> direct(@RequestBody CustomerRequestDTO requestDTO)
         throws URISyntaxException {
-        var response = service.direct(requestDTO);
+        var response = directService.direct(requestDTO);
         return ResponseEntity.created(new URI("")).body(response);
     }
 
     @DeleteMapping()
     public ResponseEntity<ResponseDTO> finish(@RequestBody FinishRequestDTO requestDTO) {
-        var response = service.finish(requestDTO);
+        var response = finishService.finish(requestDTO);
         return ResponseEntity.ok(response);
     }
 }

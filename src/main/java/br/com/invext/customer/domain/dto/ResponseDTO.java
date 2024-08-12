@@ -1,4 +1,4 @@
-package br.com.invext.customer.domain;
+package br.com.invext.customer.domain.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

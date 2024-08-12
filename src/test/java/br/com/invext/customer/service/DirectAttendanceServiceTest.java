@@ -1,7 +1,5 @@
 package br.com.invext.customer.service;
 
-import static br.com.invext.customer.util.Constants.MESSAGE_ATTENDANCE_FINISHED;
-import static br.com.invext.customer.util.Constants.MESSAGE_ATTENDANCE_NOT_FOUND;
 import static br.com.invext.customer.util.Constants.MESSAGE_ATTENDANCE_STARTED;
 import static br.com.invext.customer.util.Constants.MESSAGE_ATTENDANCE_WAITING_PLEASE_WAIT;
 import static br.com.invext.customer.util.Constants.SUBJECT_HIRING_LOAN;
@@ -10,18 +8,21 @@ import static br.com.invext.customer.util.Constants.SUBJECT_PROBLEM_WITH_CARD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import br.com.invext.customer.domain.CustomerRequestDTO;
-import br.com.invext.customer.domain.FinishRequestDTO;
-import br.com.invext.customer.domain.RequestDTO;
-import br.com.invext.customer.domain.ResponseDTO;
-import br.com.invext.customer.domain.enumerated.SquadEnum;
-import br.com.invext.customer.exception.BusinessException;
+import br.com.invext.customer.domain.AttendanceWaiting;
+import br.com.invext.customer.domain.Attendants;
+import br.com.invext.customer.domain.dto.CustomerRequestDTO;
+import br.com.invext.customer.domain.dto.RequestDTO;
+import br.com.invext.customer.domain.dto.ResponseDTO;
+import br.com.invext.customer.domain.exception.BusinessException;
 import br.com.invext.customer.mapper.AttendanceMapper;
+import br.com.invext.customer.repository.AttendantRepository;
+import java.util.ArrayList;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,10 +30,24 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AttendanceServiceTest {
+class DirectAttendanceServiceTest {
 
-    @InjectMocks private AttendanceService service;
+    @InjectMocks private DirectAttendanceService service;
     @Mock private AttendanceMapper mapper;
+
+    private Attendants attendants;
+
+    @BeforeEach
+    public void setUp() {
+        var attendantList = AttendantRepository.getAttendants();
+        attendants = mock(Attendants.class);
+        when(attendants.get()).thenReturn(attendantList);
+
+        var attendanceWaiting = mock(AttendanceWaiting.class);
+        when(attendanceWaiting.getRequests()).thenReturn(new ArrayList<>());
+
+        service = new DirectAttendanceService(attendants, attendanceWaiting, mapper);
+    }
 
     @Test
     void givenRequestCard_whenCallDirect_thenRegisterAttendance() {
@@ -102,6 +117,7 @@ class AttendanceServiceTest {
 
         verify(mapper, times(4)).toRequest(requestCard1);
     }
+
     @Test
     void givenManyRequestsAndFinishAttendanceAndDirectNewRequest_whenCallDirect_thenThrowsBusinessEceptionAndFinishOneAttendanceAndInitNew() {
         CustomerRequestDTO requestLoan1 = buildCustomerRequestLoan();
@@ -126,10 +142,7 @@ class AttendanceServiceTest {
         assertNotNull(exception);
         assertEquals(MESSAGE_ATTENDANCE_WAITING_PLEASE_WAIT, exception.getMessage());
 
-        FinishRequestDTO finishRequestDTO = buildFinishRequestLoans();
-        ResponseDTO responseDTO2 = service.finish(finishRequestDTO);
-        assertNotNull(responseDTO2);
-        assertEquals(MESSAGE_ATTENDANCE_FINISHED, responseDTO2.getResponse());
+        attendants.get().forEach(attendantDTO -> attendantDTO.getRequests().remove(requestDTO1));
 
         CustomerRequestDTO requestLoan5 = buildCustomerRequestLoan();
         RequestDTO requestDTO5 = buildRequestLoan();
@@ -140,36 +153,6 @@ class AttendanceServiceTest {
         assertEquals(MESSAGE_ATTENDANCE_WAITING_PLEASE_WAIT, exception2.getMessage());
 
         verify(mapper, times(5)).toRequest(requestLoan1);
-    }
-
-    @Test
-    void givenFinishRequestOther_whenCallFinish_thenFinishingAttendance() {
-        CustomerRequestDTO requestCard = buildCustomerRequestOther();
-        RequestDTO requestDTO = buildRequestOther();
-        FinishRequestDTO finishRequestDTO = buildFinishRequestOthers();
-
-        when(mapper.toRequest(requestCard)).thenReturn(requestDTO);
-
-        ResponseDTO responseDTO = service.direct(requestCard);
-        assertNotNull(responseDTO);
-        assertEquals(MESSAGE_ATTENDANCE_STARTED, responseDTO.getResponse());
-
-        ResponseDTO responseDTO2 = service.finish(finishRequestDTO);
-        assertNotNull(responseDTO2);
-        assertEquals(MESSAGE_ATTENDANCE_FINISHED, responseDTO2.getResponse());
-
-        verify(mapper).toRequest(requestCard);
-    }
-
-    @Test
-    void givenFinishRequestAttendanceNotStarted_whenCallFinish_thenThrowsBusinessException() {
-        FinishRequestDTO finishRequestDTO = buildFinishRequestOthers();
-
-        BusinessException exception = assertThrows(BusinessException.class, () -> service.finish(finishRequestDTO));
-        assertNotNull(exception);
-        assertEquals(MESSAGE_ATTENDANCE_NOT_FOUND, exception.getMessage());
-
-        verifyNoInteractions(mapper);
     }
 
     private CustomerRequestDTO buildCustomerRequestCard() {
@@ -211,20 +194,6 @@ class AttendanceServiceTest {
         return RequestDTO.builder()
             .name("Tawan Souza")
             .subject(SUBJECT_OTHERS)
-            .build();
-    }
-
-    private FinishRequestDTO buildFinishRequestLoans() {
-        return FinishRequestDTO.builder()
-            .customerName("Tawan Souza")
-            .type(SquadEnum.LOANS)
-            .build();
-    }
-
-    private FinishRequestDTO buildFinishRequestOthers() {
-        return FinishRequestDTO.builder()
-            .customerName("Tawan Souza")
-            .type(SquadEnum.OTHERS)
             .build();
     }
 

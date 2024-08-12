@@ -1,7 +1,7 @@
 package br.com.invext.customer.config;
 
-import br.com.invext.customer.domain.ResponseDTO;
-import br.com.invext.customer.exception.BusinessException;
+import br.com.invext.customer.domain.dto.ResponseDTO;
+import br.com.invext.customer.domain.exception.BusinessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ControllerAdvice;

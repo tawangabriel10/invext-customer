@@ -1,4 +1,4 @@
-package br.com.invext.customer.domain;
+package br.com.invext.customer.domain.dto;
 
 import br.com.invext.customer.domain.enumerated.SquadEnum;
 import java.util.ArrayList;
